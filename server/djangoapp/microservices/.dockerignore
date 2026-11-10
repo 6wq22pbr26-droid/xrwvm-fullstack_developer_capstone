@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/build
+**/__pycache__
+*.sqlite3
+.env*
+.venv
+static
+runtime
+evidence

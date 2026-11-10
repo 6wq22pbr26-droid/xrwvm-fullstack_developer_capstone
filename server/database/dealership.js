@@ -4,6 +4,7 @@ const Schema = mongoose.Schema;
 
 const dealerships = new Schema({
 	id: {
+    unique: true,
     type: Number,
     required: true,
 	},

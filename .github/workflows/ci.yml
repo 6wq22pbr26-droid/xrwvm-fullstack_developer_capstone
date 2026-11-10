@@ -1,0 +1,42 @@
+name: Capstone CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports: [27017:27017]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install and build React
+        working-directory: server/frontend
+        run: npm ci --no-audit --no-fund && npm run build
+      - name: Install Python and test Django
+        working-directory: server
+        run: |
+          pip install -r requirements.txt
+          python manage.py check
+          python manage.py test djangoapp
+          python manage.py migrate --noinput
+          python manage.py seed_cars
+      - name: Check MongoDB API and sentiment integration
+        working-directory: server
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/dealershipsDB
+        run: |
+          cd database
+          npm ci --no-audit --no-fund
+          node app.js > /tmp/dealers.log 2>&1 &
+          cd ..
+          python djangoapp/microservices/app.py > /tmp/sentiment.log 2>&1 &
+          python manage.py runserver 127.0.0.1:8000 --noreload > /tmp/django.log 2>&1 &
+          python scripts/integration_check.py
